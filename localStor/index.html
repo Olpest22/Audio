@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Геолокация и комментарии</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+            background-color: #f4f4f9;
+        }
+        h1 {
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        button {
+            background-color: #8243d6;
+            color: white;
+            border: none;
+            padding: 10px;
+            margin: 10px 0;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        button:hover {
+            background-color: #bfb230;
+        }
+        textarea {
+            width: 95%;
+            height: 100px;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            margin-bottom: 20px;
+            resize: none;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+        li {
+            padding: 5px;
+            background-color: #f9f9f9;
+            margin: 5px 0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Геолокация и Хранилища</h1>
+
+    <button id="getLocation">Определить местоположение</button>
+    <p id="coordinates"></p>
+
+    <textarea id="comment" placeholder="Введите ваш комментарий"></textarea>
+    <button id="saveData">Сохранить данные</button>
+
+    <h2>Сохраненные комментарии (LocalStorage)</h2>
+    <ul id="localStorageList"></ul>
+
+    <h2>Сохраненные комментарии (IndexedDB)</h2>
+    <ul id="indexedDBList"></ul>
+</div>
+
+<script>
+    let currentCoordinates = { latitude: null, longitude: null };
+
+    document.getElementById('getLocation').addEventListener('click', function () {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function (position) {
+                currentCoordinates = {
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude
+                };
+                document.getElementById('coordinates').textContent = 
+                    `Широта: ${currentCoordinates.latitude}, Долгота: ${currentCoordinates.longitude}`;
+            });
+        }
+    });
+
+    function saveData() {
+        const comment = document.getElementById('comment').value;
+        if (comment && currentCoordinates.latitude !== null) {
+            const entry = { comment, coordinates: currentCoordinates };
+
+            let entries = JSON.parse(localStorage.getItem('geolocationComments')) || [];
+            entries.push(entry);
+            localStorage.setItem('geolocationComments', JSON.stringify(entries));
+            displayEntries(entries, 'localStorageList');
+
+            const transaction = db.transaction(['comments'], 'readwrite');
+            const store = transaction.objectStore('comments');
+            store.add(entry);
+            transaction.oncomplete = function () {
+                displayIndexedDBEntries();
+            };
+        }
+    }
+
+   
+    function displayEntries(entries, elementId) {
+        const list = document.getElementById(elementId);
+        list.innerHTML = entries.map(entry =>
+            `<li>Комментарий: ${entry.comment}, Широта: ${entry.coordinates.latitude}, Долгота: ${entry.coordinates.longitude}</li>`
+        );
+    }
+
+    document.getElementById('saveData').addEventListener('click', saveData);
+
+    displayEntries(JSON.parse(localStorage.getItem('geolocationComments')) || [], 'localStorageList');
+
+    let db;
+    const request = indexedDB.open('GeolocationDB', 1);
+    request.onupgradeneeded = function (e) {
+        db = e.target.result;
+        db.createObjectStore('comments', { keyPath: 'id', autoIncrement: true });
+    };
+    request.onsuccess = function (e) {
+        db = e.target.result;
+        displayIndexedDBEntries();
+    };
+
+    function displayIndexedDBEntries() {
+        const transaction = db.transaction(['comments'], 'readonly');
+        const objectStore = transaction.objectStore('comments');
+        const request = objectStore.getAll();
+        request.onsuccess = function () {
+            displayEntries(request.result, 'indexedDBList');
+        };
+    }
+</script>
+
+</body>
+</html>

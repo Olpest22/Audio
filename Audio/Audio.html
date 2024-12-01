@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мультимедийное Приложение</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            color: #333;
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+
+        audio, video {
+            display: block;
+            width: 100%;
+            max-width: 100%;
+            margin: 10px 0;
+            border-radius: 8px;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            max-width: 100%;
+            background-color: #f3f3f3;
+            border: 1px solid #ccc;
+            margin-top: 10px;
+            border-radius: 8px;
+        }
+
+        .controls {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-top: 15px;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        input {
+            display: block;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .file-container {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Мультимедийное Приложение</h1>
+
+        <div class="file-container">
+            <h2>Аудио и Видео</h2>
+            <audio id="audioPlayer" controls>
+                <source src="audio.mp3" type="audio/mpeg">
+            </audio>
+            <video id="videoPlayer" controls>
+                <source src="video.mp4" type="video/mp4">
+            </video>
+        </div>
+
+        <div class="file-container">
+            <h2>Графика и Анимация</h2>
+            <canvas id="canvas" width="400" height="300"></canvas>
+            <div class="controls">
+                <button id="startAnimation">Начать анимацию</button>
+            </div>
+        </div>
+
+        <div class="file-container">
+            <h2>Работа с Изображениями</h2>
+            <input type="file" id="imageLoader" accept="image/*">
+            <canvas id="imageCanvas" width="400" height="300"></canvas>
+            <div class="controls">
+                <button id="saveImage">Сохранить изображение</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const audioPlayer = document.getElementById('audioPlayer');
+        const videoPlayer = document.getElementById('videoPlayer');
+
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let animationId;
+        let x = 0;
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height); 
+            ctx.beginPath();
+            ctx.arc(x, canvas.height / 2, 20, 0, Math.PI * 2);
+            ctx.fill();
+            x += 2; 
+            if (x > canvas.width) x = 0; 
+            animationId = requestAnimationFrame(draw); 
+        }
+
+        document.getElementById('startAnimation').addEventListener('click', () => {
+            if (animationId) {
+                cancelAnimationFrame(animationId); 
+                animationId = null;
+            } else {
+                draw(); 
+            }
+        });
+
+        const imageLoader = document.getElementById('imageLoader');
+        const imageCanvas = document.getElementById('imageCanvas');
+        const imgCtx = imageCanvas.getContext('2d');
+
+        imageLoader.addEventListener('change', function(e) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    imgCtx.clearRect(0, 0, imageCanvas.width, imageCanvas.height); 
+                    imgCtx.drawImage(img, 0, 0, imageCanvas.width, imageCanvas.height); 
+                }
+                img.src = event.target.result; 
+            }
+            reader.readAsDataURL(e.target.files[0]); 
+        });
+
+        document.getElementById('saveImage').addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.href = imageCanvas.toDataURL(); 
+            link.download = 'image.png'; 
+            link.click(); 
+        });
+    </script>
+
+</body>
+</html>
